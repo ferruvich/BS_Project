@@ -1,7 +1,7 @@
 %function progetto(input_image)
 	close all;
 	% Mostriamo l'immagine
-    input_image = imread('UBIRIS_800_600/Sessao_1/2/Img_2_1_2.jpg');
+    input_image = imread('../UBIRIS_800_600/Sessao_1/2/Img_2_1_2.jpg');
 	figure, imshow(input_image);
 
 	%Inizio preprocessing
