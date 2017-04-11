@@ -1,41 +1,68 @@
 function progetto(image_file)
 	close all;
+    warning off;
 	% Mostriamo l'immagine
     input_image = imread(image_file);
 	figure, imshow(input_image);
-
-	%Inizio preprocessing
-
-	% Controllando le immagini, abbiamo notato che la parte rossa
-	% si presta meglio alla segmentazione (rimane più nitida)
-	im_red = input_image(:,:,1);
-
-	% Applichiamo un filtro gaussiano
-	gaussian_filter = fspecial('gaussian', [800 600], 5);
-	double_im = double(im_red);
-	im_filter = imfilter(double_im, gaussian_filter);
-
-    %Edge detection
-    %Usiamo un canny edge detector
-    edges = edge(im_filter, 'canny', 0.1,5);
-       
-    % Usiamo imfindcircles per trovare oggetti circolari
-    % all''interno dell''immagine
+    sizeIm = size(input_image);
     
-    % Iride, fatto in modo diverso perchè imfindcircles non funziona
-    % altrimenti
+    irisRadius = [160, 220];
+    pupilRadius = [30, 100];
+    if (sizeIm(1) > 600) && (sizeIm(2) > 800)
+        eyeDetection = vision.CascadeObjectDetector('LeftEye');
+        eyeDetection.MinSize = [300 300];
+        bboxEye = step(eyeDetection, input_image);
+        sizeBox = size(bboxEye);
+        if sizeBox(1) == 0
+            eyeDetection = vision.CascadeObjectDetector('RightEye');
+            eyeDetection.MinSize = [300 300];
+            bboxEye = step(eyeDetection, input_image);
+        end
+        bboxEye(3) = 800;
+        bboxEye(4) = 600;
+        prova = insertObjectAnnotation(input_image, 'rectangle', bboxEye, 'Eye');
+        figure, imshow(prova);
+        input_image = imcrop(input_image, bboxEye);
+        figure, imshow(input_image);
+        irisRadius = [100, 200];
+        pupilRadius = [20, 40];
+    end
+    
+    
+    % Cattura zona iride
+    % Preprocessing
     im2 = rgb2gray(input_image);
-    im3 = im2bw(histeq(im2), 0.55);
-    [centersI, radiI] = imfindcircles(im3, [160, 220], 'Sensitivity', .99, 'ObjectPolarity', 'dark');
+    im3 = im2bw(histeq(im2), 0.5);
+    % Usiamo imfindcircles per trovare cerchi di raggio 
+    % tra 160 e 220 all'interno dell'immagine 
+    [centersI, radiI] = imfindcircles(im3, irisRadius, 'Sensitivity', .99, 'ObjectPolarity', 'dark');
     dim = size(centersI);
     if dim(1) > 1
         centersI = centersI(1,:);
         radiI = radiI(1);
     end
+    % Visualizziamo l'iride, evidenziando la sua zona di blu
     viscircles(centersI, radiI, 'EdgeColor', 'b');
-    
-    % Pupilla
-    [centers, radii] = imfindcircles(edges, [35, 60], 'Sensitivity', .95);
+
+	% Cattura zona pupilla
+    % Preprocessing
+    imageSize = size(input_image);
+    input_image_filled = imcomplement(imfill(imcomplement(input_image(:,:,1)),'holes'));
+    %figure, imshow(input_image_filled);
+    coordinatesIris = [centersI(2), centersI(1), radiI];
+    [xx,yy] = ndgrid((1:imageSize(1)),(1:imageSize(2)));
+    maskIris = uint8(((xx-coordinatesIris(1)).^2 + (yy-coordinatesIris(2)).^2) <= coordinatesIris(3)^2);
+    croppedImage = input_image_filled.*maskIris;
+    %figure, imshow(croppedImage);
+	im_red = croppedImage(:,:,1);
+    %figure, imshow(im_red);
+	gaussian_filter = fspecial('gaussian', [800 600], 5);
+	double_im = double(im_red);
+	im_filter = imfilter(double_im, gaussian_filter);
+    edges = edge(im_filter, 'canny', 0.1,5);
+    % Usiamo imfindcircles per trovare cerchi di raggio 
+    % tra 35 e 60 all'interno dell'immagine 
+    [centers, radii] = imfindcircles(edges, pupilRadius, 'Sensitivity', .99, 'ObjectPolarity', 'dark');
     dim = size(centers);
     if dim(1) > 1
         for i = 1:dim(1)
@@ -48,26 +75,10 @@ function progetto(image_file)
             end
         end
     end
+    % Visualizziamo la pupilla, evidenziando la sua zona di rosso
     viscircles(centers, radii, 'EdgeColor', 'r');
-
-    % Post processing - versione bianca
-    imageSize = size(input_image);
-    coordinatesIris = [centersI(2), centersI(1), radiI];
-    coordinatesPupil = [centers(2), centers(1), radii];
-    [xx2,yy2] = ndgrid((1:imageSize(1)),(1:imageSize(2)));
-    maskIris = uint8(((xx2-coordinatesIris(1)).^2 + (yy2-coordinatesIris(2)).^2) <= coordinatesIris(3)^2);
-    maskPupil = uint8(((xx2-coordinatesPupil(1)).^2 + (yy2-coordinatesPupil(2)).^2) <= coordinatesPupil(3)^2);
-    croppedImageIris = uint8(ones(size(input_image(:,:,1)))).*255;
-    croppedImagePupil = uint8(ones(size(input_image(:,:,1)))).*255;
-    croppedImageIris = croppedImageIris.*maskIris;
-    croppedImagePupil = croppedImagePupil.*maskPupil;
-    finalCropped = croppedImageIris-croppedImagePupil;
-    figure, imshow(finalCropped);
     
-    %Post processing - crop della zona dell'iride nell'immagine originale
-    croppedImage = uint8(zeros(size(input_image)));
-    finalCropped = finalCropped./255;
-    croppedImage(:,:,1) = input_image(:,:,1).*finalCropped;
-    croppedImage(:,:,2) = input_image(:,:,2).*finalCropped;
-    croppedImage(:,:,3) = input_image(:,:,3).*finalCropped;
-    figure, imshow(croppedImage);
+    % Eseguiamo un post_processing dell'immagine,
+    % e salviamo il file
+    post_process(input_image, image_file, centers, radii, centersI, radiI);
+end
