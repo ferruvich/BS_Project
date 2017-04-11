@@ -1,7 +1,7 @@
 BS Project
 =======
 
-+++ Membri: 
+### Membri: 
 
 - *Daniele Stefano Ferru*
 - *Federico Ibba*
