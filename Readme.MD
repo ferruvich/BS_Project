@@ -36,4 +36,18 @@ Abbiamo scelto di applicare il Canny edge detector poiché è uno dei più robus
 L'algoritmo di edge detection restituisce un'immagine binaria, contenente gli edge trovati.
 
 ### Trasformata circolare di Hough
- 
+La trasformata circolare di Hough viene utilizzata per evidenziare forme circolari presenti nell'immagine. Questa trasformata si è rilevata essenziale per il riconoscimento di forme prettamente circolari come iridi e pupille umane.  
+Per effettuare questa trasformata è stata utilizzata la funzione predefinita di matlab ***imfindcircles()***.
+Essa prende in ingresso, oltre all'immagine ovviamente, il range dei raggi dei cerchi da evidenziare, e ulteriori parametri come:
+- *Sensitivity*: un valore compreso nel range [0 1]. Un valore maggiore corrisponde ad un maggior numero di cerchi trovati. Sia per pupilla che per iride è stato usato un valore di sensitivity pari a 0.99.
+- *ObjectPolarity*: valore che può essere *bright* per la localizzazione di oggetti circolari di tonalità chiara (alto valore in gray scale) oppure *dark*, per la localizzazione di oggetti circolari di tonalità scura (basso valore in grayscale).
+Per quanto riguarda la pupilla, alcune immagini tendevano a trovare numerosi oggetti circolari all'interno dell'iride. Per risolvere questa situazione, è bastato controllare il centro di ogni cerchio, e prendere il primo le cui coordinate sono entro un range di distanza rispetto al centro dell'iride.
+Questo viene fatto perché, nel caso medio, pupilla e iride hanno più o meno lo stesso centro.
+Si è scelto di prendere il primo cerchio che fosse abbastanza vicino e non il più vicino in assoluto perchè, dopo uno studio su numerose immagini, si è notato che i cerchi trovati attraverso imfindcircles si trovavano tutti distanti rispetto al centro dell'iride, tranne uno, che rappresentava per l'appunto la pupilla.
+
+### Crop immagine
+Per il crop dell'immagine è bastato sfruttare il centro di iride e pupilla. Sono state preparate delle maschere specifiche per entrambe.
+Il crop dell'immagine è stato di due tipologie:
+- Crop dell'immagine in formato binario;
+- Crop dell'immagine in RGB.
+All'interno della cartella *examples* sono presenti numerosi esempi della serie (immagine originale, crop binaria, crop RGB).
