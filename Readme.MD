@@ -37,7 +37,7 @@ L'algoritmo di edge detection restituisce un'immagine binaria, contenente gli ed
 
 ### Trasformata circolare di Hough
 La trasformata circolare di Hough viene utilizzata per evidenziare forme circolari presenti nell'immagine. Questa trasformata si è rilevata essenziale per il riconoscimento di forme prettamente circolari come iridi e pupille umane.  
-Per effettuare questa trasformata è stata utilizzata la funzione predefinita di matlab ***imfindcircles()***.
+Per effettuare questa trasformata è stata utilizzata la funzione predefinita di matlab ***imfindcircles***.
 Essa prende in ingresso, oltre all'immagine ovviamente, il range dei raggi dei cerchi da evidenziare, e ulteriori parametri come:
 - *Sensitivity*: un valore compreso nel range [0 1]. Un valore maggiore corrisponde ad un maggior numero di cerchi trovati. Sia per pupilla che per iride è stato usato un valore di sensitivity pari a 0.99.
 - *ObjectPolarity*: valore che può essere *bright* per la localizzazione di oggetti circolari di tonalità chiara (alto valore in gray scale) oppure *dark*, per la localizzazione di oggetti circolari di tonalità scura (basso valore in grayscale).
